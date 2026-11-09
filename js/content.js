@@ -1416,6 +1416,20 @@
         },
         goto: "silt.nim",
       });
+      if (s.flags.nim === "done" && (s.flags.nimAffection || 0) >= 10 && !s.flags.nimFlirtDone) {
+        c.push({
+          label: "Tell her the tent feels less like a clinic when she's in it.",
+          check: { skill: "speech", name: "Speech", mod: 5 },
+          success: "silt.nimFlirtOk",
+          failure: "silt.nimFlirtNo",
+        });
+        c.push({
+          label: "Ask if she ever puts the iodine down for a night.",
+          check: { attr: "cha", name: "Charm", mod: 0 },
+          success: "silt.nimFlirtOk",
+          failure: "silt.nimFlirtNo",
+        });
+      }
       c.push({ label: "Leave her to the cough.", goto: "silt.square" });
       return c;
     },
@@ -1461,6 +1475,7 @@
           st.scrip += 20;
           Ash.shiftKarma(4, st);
           Ash.xpAward(60, st);
+          if (Ash.bumpNim) Ash.bumpNim(18, st);
         },
         goto: "silt.square",
       },
@@ -1652,6 +1667,7 @@
               st.joss.hp = st.joss.maxHp;
               Ash.xpAward(25, st);
               Ash.shiftKarma(2, st);
+              if (Ash.bumpJoss) Ash.bumpJoss(12, st);
             } else st.flags.jossSpeechFailed = true;
           },
         });
@@ -1667,6 +1683,7 @@
             st.joss.following = true;
             st.joss.hp = st.joss.maxHp;
             Ash.xpAward(25, st);
+            if (Ash.bumpJoss) Ash.bumpJoss(10, st);
             st.note = "She eats one like it insulted her and pockets the other. \"Fine. I walk. Don't narrate it.\"";
           },
           goto: "silt.square",
@@ -1682,6 +1699,7 @@
             st.joss.following = true;
             st.joss.hp = st.joss.maxHp;
             Ash.xpAward(25, st);
+            if (Ash.bumpJoss) Ash.bumpJoss(10, st);
             st.note = "Pebble's runner takes the scrip before Joss can pretend not to care. She cares enough to stand up.";
           },
           goto: "silt.square",
@@ -1697,6 +1715,7 @@
             st.joss.hp = st.joss.maxHp;
             Ash.xpAward(25, st);
             Ash.shiftKarma(2, st);
+            if (Ash.bumpJoss) Ash.bumpJoss(14, st);
             st.note = "She hears about the cup and goes quiet in the good way. \"All right. Don't make it a story.\"";
           },
           goto: "silt.square",
@@ -1712,6 +1731,33 @@
           goto: "silt.square",
         });
       }
+      if (s.joss.alive && !s.joss.parted && !s.flags.jossDrinkShared) {
+        c.push({
+          label: "Buy her a drink and share it.",
+          if: function (st) { return st.scrip >= 6; },
+          fx: function (st) {
+            st.scrip -= 6;
+            st.flags.jossDrinkShared = true;
+            if (Ash.bumpJoss) Ash.bumpJoss(10, st);
+            st.note = "The bottle goes back and forth. Joss's late laugh arrives almost on time. \"You're paying for a habit. Don't make it a hobby.\"";
+          },
+          goto: "silt.joss",
+        });
+      }
+      if (s.joss.alive && !s.joss.parted && (s.joss.affection || 0) >= 12 && !s.flags.jossFlirtDone) {
+        c.push({
+          label: "Tell her the trough's less interesting than she is.",
+          check: { skill: "speech", name: "Speech", mod: 0 },
+          success: "silt.jossFlirtOk",
+          failure: "silt.jossFlirtNo",
+        });
+        c.push({
+          label: "Ask, carefully, if she ever rests with company.",
+          check: { attr: "cha", name: "Charm", mod: -5 },
+          success: "silt.jossFlirtOk",
+          failure: "silt.jossFlirtNo",
+        });
+      }
       c.push({ label: "Leave her the bottle.", goto: "silt.square" });
       return c;
     },
@@ -1723,9 +1769,18 @@
     text: "\"I shot for a caravan that thought it was a town. The town ended. I kept the rifle and lost the part where I talk first.\" She kills the laugh before it starts. \"If you're recruiting, don't. I'm expensive in bad decisions.\"",
     choices: [
       {
+        label: "Honest enough. I'll keep the score clean.",
+        fx: function (s) {
+          s.flags.jossHeardStory = true;
+          if (Ash.bumpJoss) Ash.bumpJoss(8, s);
+        },
+        goto: "silt.joss",
+      },
+      {
         label: "Fair enough.",
         fx: function (s) {
           s.flags.jossHeardStory = true;
+          if (Ash.bumpJoss) Ash.bumpJoss(3, s);
         },
         goto: "silt.joss",
       },
@@ -1742,6 +1797,7 @@
         fx: function (s) {
           s.flags.jossQuest = "started";
           Ash.learn("coil", s);
+          if (Ash.bumpJoss) Ash.bumpJoss(4, s);
         },
         goto: "silt.square",
       },
@@ -1753,7 +1809,11 @@
     scene: "silt",
     speaker: { id: "joss", name: "Joss" },
     text: "She stands. The bottle stays. The rifle comes. \"You sound like a person with a place to be. Don't get poetic when I shoot. I hate a narrator.\"",
-    choices: [{ label: "Then let's walk.", goto: "silt.square" }],
+    choices: [{
+      label: "Then let's walk.",
+      fx: function (s) { if (Ash.bumpJoss) Ash.bumpJoss(12, s); },
+      goto: "silt.square",
+    }],
   });
 
   N("silt.jossJoinFail", {

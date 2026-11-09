@@ -41,6 +41,7 @@ vm.createContext(context);
   "engine.js",
   "content.js",
   "content-b.js",
+  "romance.js",
   "scenes.js",
 ].forEach(function (file) {
   var code = fs.readFileSync(path.join(__dirname, "..", "js", file), "utf8");
@@ -494,4 +495,78 @@ if (failed) {
   console.error(failed + " failures");
   process.exit(1);
 }
+
+/* Romance: Joss and Nim, fade-to-black, epitaph, save migrate */
+(function () {
+  Ash.debug = { alwaysPass: true, noEncounter: true, queue: [] };
+  Ash.newGame({
+    name: "Willow",
+    background: "tech",
+    attrs: { str: 5, per: 5, end: 6, cha: 8, int: 6, agi: 5, lck: 5 },
+    tags: ["speech", "science", "repair"],
+  });
+  var s = Ash.state;
+  Ash.ensureRomance(s);
+  s.location = "silt";
+  s.node = "silt.square";
+  s.flags.seenSilt = true;
+  s.joss.met = true;
+  s.joss.recruited = true;
+  s.joss.following = true;
+  s.joss.alive = true;
+  s.joss.affection = 45;
+  s.scrip = 40;
+  Ash.rest();
+  assert(s.node === "romance.joss.bunk", "joss bunk offer on rest");
+  var choices = Ash.choiceList();
+  assert(choices.some(function (c) { return /Stay/.test(c.label); }), "joss stay choice");
+  assert(choices.some(function (c) { return /Not tonight/.test(c.label); }), "joss decline choice");
+  // accept
+  var stay = choices.findIndex(function (c) { return /Stay/.test(c.label); });
+  Ash.choose(stay);
+  assert(s.node === "romance.joss.fade", "joss fade node");
+  Ash.choose(0);
+  assert(s.joss.romance === true, "joss romance flag");
+  assert(Ash.wellRested(s), "well rested after joss");
+  Ash.ending("broker");
+  var ep = Ash.epitaph(s);
+  assert(/private morning/.test(ep.foot), "joss romance epitaph: " + ep.foot);
+
+  // Nim path
+  store = {};
+  Ash.newGame({
+    name: "Willow",
+    background: "clerk",
+    attrs: { str: 4, per: 6, end: 5, cha: 7, int: 8, agi: 5, lck: 5 },
+    tags: ["speech", "medicine", "science"],
+  });
+  s = Ash.state;
+  Ash.ensureRomance(s);
+  s.location = "silt";
+  s.flags.seenSilt = true;
+  s.flags.metNim = true;
+  s.flags.nim = "done";
+  s.flags.nimAffection = 50;
+  s.joss.affection = 0;
+  s.joss.recruited = false;
+  Ash.rest();
+  assert(s.node === "romance.nim.tent", "nim tent offer");
+  Ash.choose(Ash.choiceList().findIndex(function (c) { return /Stay/.test(c.label); }));
+  assert(s.node === "romance.nim.fade", "nim fade");
+  Ash.choose(0);
+  assert(s.flags.nimRomance === true, "nim romance flag");
+  Ash.ending("stay");
+  ep = Ash.epitaph(s);
+  assert(/second cup/.test(ep.foot), "nim romance epitaph");
+
+  // old save migrate affection 0
+  var bare = Ash.defaultState();
+  delete bare.joss.affection;
+  delete bare.joss.romance;
+  Ash.state = bare;
+  Ash.ensureRomance(Ash.state);
+  assert(Ash.state.joss.affection === 0, "migrate affection 0");
+  console.log("Romance paths ok");
+})();
+
 console.log("All playtests passed.");

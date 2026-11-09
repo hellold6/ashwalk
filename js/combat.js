@@ -436,6 +436,9 @@
         if (bits.length) s.note = bits.join(" ");
       }
       if (onWin) onWin(s, { talk: how === "talk" });
+      if (s.joss && s.joss.recruited && s.joss.following && s.joss.alive && !s.joss.parted && Ash.bumpJoss) {
+        Ash.bumpJoss(how === "talk" ? 3 : 5, s);
+      }
       if (xp) Ash.xpAward(xp, s);
       if ((s.bankedSkills > 0 || s.bankedPerks > 0) && !s.modal) Ash.openLevelUp();
       if (s.dead || s.ending) return;

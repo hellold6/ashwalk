@@ -39,13 +39,21 @@
     return s;
   }
 
+  function isTouchUi() {
+    try {
+      return !!(window.matchMedia && (window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(hover: none)").matches));
+    } catch (e) {
+      return false;
+    }
+  }
+
   function choiceLabel(c, i) {
     var label = c.label;
     if (c.check) {
       var name = c.check.name || (Ash.SKILLS[c.check.skill] && Ash.SKILLS[c.check.skill].name) || "Check";
       label += " [" + name + " " + Ash.chanceOf(c.check) + "%]";
     }
-    var n = i < 9 ? i + 1 + ". " : "";
+    var n = !isTouchUi() && i < 9 ? i + 1 + ". " : "";
     return n + label;
   }
 
@@ -66,7 +74,7 @@
       '<button type="button" class="btn" data-act="open-load">Load</button>' +
       '<button type="button" class="btn" data-act="credits">Credits</button>' +
       "</div>" +
-      '<p class="keys">Keys 1–9 choose. M map. I pack. C sheet. R rest.</p>' +
+      '<p class="keys" data-desktop-only="1">Keys 1–9 choose. M map. I pack. C sheet. R rest.</p>' +
       "</div></div>" +
       (Ash.state.modal === "load" ? loadSheet(true) : "")
     );
@@ -216,6 +224,7 @@
       '<div class="stat">Scrip <b>' +
       s.scrip +
       "</b></div>" +
+      (Ash.wellRested && Ash.wellRested(s) ? '<div class="stat"><b>Well Rested</b></div>' : "") +
       "</div>" +
       '<div class="lungs ' +
       cls +
@@ -264,7 +273,8 @@
       '<div class="choices">' +
       choices +
       "</div></article></div>" +
-      '<nav class="dock">' +
+      '<div class="dock-spacer" aria-hidden="true"></div>' +
+      '<nav class="dock" aria-label="Travel tools">' +
       '<button type="button" data-act="open-map">Map</button>' +
       '<button type="button" data-act="open-pack">Pack</button>' +
       '<button type="button" data-act="open-sheet">Sheet</button>' +
@@ -720,8 +730,7 @@
         (attrs || "") +
         (disabled ? " disabled" : "") +
         ">" +
-        nbtn +
-        ". " +
+        (isTouchUi() ? "" : nbtn + ". ") +
         label +
         "</button>";
       nbtn += 1;
@@ -777,8 +786,9 @@
       foes +
       '</div><div class="combat-log">' +
       log +
-      "</div>" +
-      buttons
+      '</div><div class="combat-actions">' +
+      buttons +
+      "</div>"
     );
   }
 
@@ -891,6 +901,9 @@
 
   Ash.ui = {
     render: function () {
+      try {
+        document.documentElement.classList.toggle("touch", isTouchUi());
+      } catch (e) {}
       var root = document.getElementById("app");
       if (!root) return;
       var s = Ash.state;

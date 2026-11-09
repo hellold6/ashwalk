@@ -122,8 +122,13 @@
   Ash.chanceOf = function (check, s) {
     s = s || Ash.state;
     if (!check) return 0;
-    var skill = Ash.skillValue(check.skill, s);
     var mod = typeof check.mod === "function" ? check.mod(s) : check.mod || 0;
+    if (check.attr) {
+      var av = s.attrs[check.attr] || 5;
+      var luckA = (s.attrs.lck - 5) * 2;
+      return Ash.clamp(av * 10 + mod + luckA, 5, 95);
+    }
+    var skill = Ash.skillValue(check.skill, s);
     if ((check.skill === "speech" || check.skill === "barter") && check.joss && s.joss.following && s.joss.alive && !s.joss.parted) {
       mod -= Ash.hasPerk("softVoice", s) ? 6 : 14;
     }
@@ -150,7 +155,8 @@
     var key = "jossHeard_" + s.location;
     if (s.flags[key]) return;
     s.flags[key] = true;
-    s._jossLine = Ash.JOSS_LINES[s.location] || "";
+    if (Ash.ensureRomance) Ash.ensureRomance(s);
+    s._jossLine = Ash.jossTravelLine ? Ash.jossTravelLine(s.location, s) : Ash.JOSS_LINES[s.location] || "";
   };
 
   Ash.arrive = function (loc) {
@@ -304,7 +310,31 @@
           : "Not here. Not with your eyes closed.";
       return;
     }
+    if (Ash.ensureRomance) Ash.ensureRomance(s);
+    if (Ash.romanceRestOffer && Ash.romanceRestOffer(s)) {
+      return;
+    }
+    Ash.finishRest();
+  };
+
+  Ash.finishRest = function () {
+    var s = Ash.state;
+    if (s.dead || s.ending || s.modal === "combat") return;
+    var loc = s.location;
+    var safe = {
+      bunker: true,
+      hatch: true,
+      silt: true,
+      tower: true,
+      scrap: false,
+      crater: false,
+      silent: false,
+      coil: !!s.flags.coilCleared,
+      reed: !s.flags.reedHostile && !s.flags.reedDead,
+    };
+    if (!safe[loc]) return;
     Ash.save.auto();
+
     var before = s.hp;
     var frac = loc === "bunker" || (loc === "reed" && s.flags.reedHelp) ? 0.5 : 0.35;
     var gain = Math.floor(Ash.maxHp(s) * frac) + Math.floor(Ash.skillValue("medicine", s) / 10);
@@ -333,6 +363,9 @@
       ". " +
       (healed > 0 ? "The worst of it knits (" + healed + ")." : "Sleep doesn't bother to heal you.") +
       (s.flags.lungsSaved ? " The Lungs keep their dull new rhythm." : " The Lungs: " + s.lungs + " days.");
+    if (Ash.wellRested && Ash.wellRested(s)) {
+      base += " Well Rested still sits in your bones.";
+    }
     s.note = (s.note ? s.note + " " : "") + base;
     Ash.save.auto();
   };
@@ -414,6 +447,7 @@
     if (!s.joss.met) joss = "A drunk at the trough never had to learn the name.";
     else if (!s.joss.alive) joss = "Joss ended in the dust with the rifle under her. Somebody will pretend that was the plan.";
     else if (s.joss.parted) joss = "Joss stayed at the trough and did not watch the hatch. She counts that as mercy.";
+    else if (s.joss.romance) joss = "Joss is alive, and the file notes a private morning neither of them filed. She still hates narrators.";
     else if (s.joss.recruited) joss = "Joss is alive, which she treats as a clerical error she intends to keep.";
     else joss = "Joss is still at the trough, spending her aim on bottles.";
 
@@ -506,10 +540,17 @@
       extra += " Tic still taps Juniper on his knee, softer now.";
     }
 
+    var nim = "";
+    if (s.flags && s.flags.nimRomance) {
+      nim = " Nim's tent kept a second cup out for a while, then pretended it was always for tea.";
+    } else if (s.flags && s.flags.nim === "done") {
+      nim = " Nim's kits still work harder than her mouth admits.";
+    }
+
     return {
       title: title,
       body: body + extra,
-      foot: silt + " " + joss + " The ledger marks them " + k + ".",
+      foot: silt + " " + joss + nim + " The ledger marks them " + k + ".",
       meta: n + "  ·  day " + days + "  ·  " + k + "  ·  level " + s.level,
     };
   };

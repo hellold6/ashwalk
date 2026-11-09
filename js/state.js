@@ -85,6 +85,14 @@ Ash.d100 = function () {
       cacheRoad: false,
       dustOnce: false,
       jossParted: false,
+      nimAffection: 0,
+      nimRomance: false,
+      jossRomanceNo: false,
+      nimRomanceNo: false,
+      wellRestedUntil: 0,
+      jossDrinkShared: false,
+      jossRomanceDefer: 0,
+      nimRomanceDefer: 0,
       raidDone: false,
       marginaliaUsed: false,
       ground: {},
@@ -124,6 +132,8 @@ Ash.d100 = function () {
         parted: false,
         hp: 32,
         maxHp: 32,
+        affection: 0,
+        romance: false,
       },
       note: "",
       bankedSkills: 0,
@@ -179,13 +189,16 @@ Ash.d100 = function () {
     s = s || Ash.state;
     var hp = 22 + s.attrs.end * 5 + (s.level - 1) * 4;
     if (Ash.hasPerk("hatch", s)) hp += 6;
+    if (Ash.wellRested && Ash.wellRested(s)) hp += 8;
     if (s.rads >= 50) hp -= Math.floor(hp * clamp(s.rads - 40, 0, 60) / 200);
     return Math.max(8, hp);
   };
 
   Ash.maxAp = function (s) {
     s = s || Ash.state;
-    return 5 + Math.floor(s.attrs.agi / 2);
+    var ap = 5 + Math.floor(s.attrs.agi / 2);
+    if (Ash.wellRested && Ash.wellRested(s)) ap += 1;
+    return ap;
   };
 
   Ash.carryMax = function (s) {
@@ -560,8 +573,10 @@ Ash.d100 = function () {
       Ash.state.screen = Ash.state.ending ? "ending" : "play";
       Ash.state.modal = null;
       Ash.state.combat = null;
-      Ash.state.hp = Math.max(1, Math.min(Ash.state.hp, Ash.maxHp(Ash.state)));
+      if (!Ash.state.flags) Ash.state.flags = Ash.blankFlags();
       if (!Ash.state.flags.ground) Ash.state.flags.ground = {};
+      if (Ash.ensureRomance) Ash.ensureRomance(Ash.state);
+      Ash.state.hp = Math.max(1, Math.min(Ash.state.hp, Ash.maxHp(Ash.state)));
       return true;
     },
     list: function () {

@@ -484,6 +484,7 @@
             },
             onWin: function (st, info) {
               st.flags.lookoutCleared = true;
+            if (Ash.bumpJoss) Ash.bumpJoss(16, st);
               if (info && info.talk) Ash.xpAward(20, st);
               Ash.shiftRep("coil", -8, st);
             },
@@ -506,6 +507,7 @@
             intro: "A stone turns under your boot and the lookout stops being bored.",
             onWin: function (st) {
               st.flags.lookoutCleared = true;
+            if (Ash.bumpJoss) Ash.bumpJoss(16, st);
               Ash.shiftRep("coil", -8, st);
             },
           },
@@ -535,6 +537,7 @@
         label: "Walk in.",
         fx: function (s) {
           s.flags.lookoutCleared = true;
+          if (Ash.bumpJoss) Ash.bumpJoss(16, s);
         },
         goto: "coil.camp",
       },
@@ -554,6 +557,7 @@
           intro: "The Coil collected a grudge with your name on it.",
           onWin: function (s) {
             s.flags.lookoutCleared = true;
+          if (Ash.bumpJoss) Ash.bumpJoss(16, s);
             Ash.shiftRep("coil", -5, s);
           },
         },
@@ -746,6 +750,7 @@
             st.flags.haspDead = true;
             st.flags.coilCleared = true;
             st.flags.lookoutCleared = true;
+            if (Ash.bumpJoss) Ash.bumpJoss(16, st);
             Ash.shiftRep("coil", -30, st);
             Ash.shiftKarma(-6, st);
           },
