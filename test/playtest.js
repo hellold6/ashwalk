@@ -41,7 +41,7 @@ vm.createContext(context);
   "engine.js",
   "content.js",
   "content-b.js",
-  "romance.js",
+  "bonds.js",
   "scenes.js",
 ].forEach(function (file) {
   var code = fs.readFileSync(path.join(__dirname, "..", "js", file), "utf8");
